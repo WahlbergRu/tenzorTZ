@@ -1,0 +1,19 @@
+{
+  "name": "pure-virtual-list",
+  "version": "1.0.0",
+  "description": "pure virtual list",
+  "main": "dist/pure-virtual-list.js",
+  "dependencies": {
+    "babel-cli": "^6.14.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.14.0",
+    "babel-preset-es2015": "^6.14.0"
+  },
+  "scripts": {
+    "prebabel": "babel --plugins transform-es2015-template-literals dist/pure-virtual-list.js -o src/pure-virtual-list.js --source-maps",
+    "babel": "babel --plugins transform-es2015-template-literals dist/pure-virtual-list.js -w -o src/pure-virtual-list.js --source-maps"
+  },
+  "author": "Wahlberg",
+  "license": "ISC"
+}

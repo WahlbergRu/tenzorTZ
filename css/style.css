@@ -1,0 +1,7 @@
+.list-group-item-alphabet{
+    z-index: 2;
+    color: #333;
+    text-decoration: none;
+    background-color: #bbb;
+    border-color: #bbb;
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>
+        tensor TZ
+    </title>
+    <link rel="stylesheet" href="./css/bootstrap.css"/>
+    <!-- Да простят мне боги, что я не использовал препроцессоры или модный постцсс, мне лень его подключать. -->
+    <link rel="stylesheet" href="./css/style.css"/>
+</head>
+<body>
+<!--TODO: перенести в examples-->
+    <div id="listGroup"></div>
+
+    <script src="src/pure-virtual-list.js"></script>
+
+    <script>
+        var pVL = {
+            domElement: 'div#listGroup',
+            template: '',
+            dataRequest: {
+                url: 'example/data-names.json',
+                method: 'GET',
+                statusAcceptence: [200, 201, 204],
+                headers: [
+                    {
+                        name: 'Content-Type',
+                        value: 'application/json'
+                    }
+                ]
+            }
+        };
+
+        pureVirtualList.init(pVL);
+    </script>
+
+</body>
+</html>
