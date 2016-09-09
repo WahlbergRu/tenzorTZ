@@ -13,28 +13,70 @@
 </head>
 <body>
 <!--TODO: перенести в examples-->
-    <div id="listGroup"></div>
+    <div class="row">
+        <div id="leftList" class="col-xs-6" ></div>
+        <div id="rightList" class="col-xs-6"></div>
+    </div>
 
     <script src="src/pure-virtual-list.js"></script>
 
     <script>
-        var pVL = {
-            domElement: 'div#listGroup',
-            template: '',
-            dataRequest: {
-                url: 'example/data-names.json',
-                method: 'GET',
-                statusAcceptence: [200, 201, 204],
-                headers: [
-                    {
-                        name: 'Content-Type',
-                        value: 'application/json'
-                    }
-                ]
-            }
+        var pvl = {
+            domElement: 'div#leftList',
+            template: 'list'
         };
 
-        pureVirtualList.init(pVL);
+        var pvlRight = {
+            domElement: 'div#rightList',
+            template: 'list'
+        };
+
+        //TODO: сделать конфиг для api, а по урлам получать информацию. Да бы не плодить статус и хидеры, они всё равно летают в промайзе.
+
+        var dataRequest = {
+            url: 'example/data-names.json',
+            method: 'GET',
+            statusAcceptence: [200, 201, 204],
+            headers: [
+                {
+                    name: 'Content-Type',
+                    value: 'application/json'
+                }
+            ]
+        };
+
+        var dataRequest2 = {
+            url: 'example/data-names-2.json',
+            method: 'GET',
+            statusAcceptence: [200, 201, 204],
+            headers: [
+                {
+                    name: 'Content-Type',
+                    value: 'application/json'
+                }
+            ]
+        };
+
+        var ls = new ListTemplate;
+
+        new Api(dataRequest).then(
+            function(res){
+                new VirtualList().innerArrayInHTML(pvl, JSON.parse(res.response), ls);
+            },
+            function(err){
+                console.log(err);
+            }
+        );
+
+        new Api(dataRequest2).then(
+            function(res){
+                new VirtualList().innerArrayInHTML(pvlRight, JSON.parse(res.response), ls);
+            },
+            function(err){
+                console.log(err);
+            }
+        );
+
     </script>
 
 </body>
