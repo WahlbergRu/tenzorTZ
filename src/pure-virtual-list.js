@@ -72,18 +72,18 @@ var Api = function Api(obj) {
 
 //Если нужно написать тимплейт со своей сериализацией
 
-var ListTemplate = function ListTemplate(template, items) {
+var ListTemplate = function ListTemplate(template, items, key) {
     _classCallCheck(this, ListTemplate);
 
     if (!template) return false;
     var html;
+
     switch (template) {
         case 'list':
-            html = function html(items) {
-                return '\n                    <div class="list-group">\n                        ' + items.map(function (item) {
-                    return item.name.length > 1 ? '<a href="#action-' + item.guid + '-' + item.email + '-' + item.company + '" class="list-group-item list-group-item-action">' + item.name + '</a>' : '<div class="list-group-item ">' + item.name + '</div>';
-                }).join('') + '\n                    </div>\n                ';
-            };
+            var item = items;
+            if (key) {
+                html = item[key].length > 1 ? '<a href="#action-' + item[key] + '" class="list-group-item list-group-item-action">' + item[key] + '</a>' : '<div class="list-group-item ">' + item[key] + '</div>';
+            }
             break;
 
         default:
@@ -91,57 +91,77 @@ var ListTemplate = function ListTemplate(template, items) {
             return false;
     }
 
-    return html(items);
+    return html;
 };
 
 ;
 
-//Виртуал лист.
-
 var VirtualList = function () {
-    function VirtualList() {
+    function VirtualList(obj, data, templateList) {
         _classCallCheck(this, VirtualList);
+
+        //TODO: сделать заголовки списка в зависимости от regex,
+        //TODO: сделать возможность не обязательных заголовков в листе
+        this.templateList = templateList;
+        this.config = obj;
+        this.data = this.sortedByKey(data, this.config.sortKey);
+
+        for (var i = 0; i < document.querySelectorAll(obj.domElement).length; i++) {
+            var el = document.querySelectorAll(obj.domElement)[i];
+            this.VirtualListConfig(el);
+        }
     }
 
     _createClass(VirtualList, [{
         key: 'VirtualListConfig',
-        value: function VirtualListConfig(config) {
-            var width = config && config.w + 'px' || '100%';
-            var height = config && config.h + 'px' || '100%';
-            var itemHeight = this.itemHeight = config.itemHeight;
+        value: function VirtualListConfig(el) {
+            if (!el || !this.data.length) return false;
+            //TODO: было бы не плохо сделать лист горизонтальным
+            var width = el.offsetWidth + 'px';
+            var height = el.offsetHeight;
+            var itemHeight = this.itemHeight = this.config.itemHeight;
+            var fullHeight = itemHeight * this.data.length;
 
-            this.items = config.items;
-            this.generatorFn = config.generatorFn;
-            this.totalRows = config.totalRows || config.items && config.items.length;
+            this.items = this.data;
+            this.totalRows = this.config.totalRows || this.data.length;
 
-            var scroller = this.createScroller(itemHeight * this.totalRows);
-            this.container = this.createContainer(width, height);
-            this.container.appendChild(scroller);
+            var scrollerStart = this.createScroller(0);
+            var scrollerEnd = this.createScroller(itemHeight * this.data.length);
 
-            var screenItemsLen = Math.ceil(config.h / itemHeight);
-            // Cache 4 times the number of items that fit in the container viewport
-            this.cachedItemsLen = screenItemsLen * 3;
-            this._renderChunk(this.container, 0);
+            var cont = el.appendChild(this.createContainer(this.config.domContainer.class));
+            cont.appendChild(scrollerStart);
+            cont.appendChild(scrollerEnd);
+
+            var screenItemsLen = Math.ceil(height / itemHeight);
+
+            this.cachedItemsLen = screenItemsLen + this.config.itemBuffer;
+            this._renderChunk(cont, 0);
 
             var self = this;
             var lastRepaintY = void 0;
-            var maxBuffer = screenItemsLen * itemHeight;
+            var maxBuffer = itemHeight;
             var lastScrolled = 0;
 
+            //TODO: #chank 2
             this.rmNodeInterval = setInterval(function () {
                 if (Date.now() - lastScrolled > 100) {
-                    var badNodes = document.querySelectorAll('[data-rm="1"]');
+                    var badNodes = document.querySelectorAll('[data-rm="delete"]');
                     for (var i = 0, l = badNodes.length; i < l; i++) {
-                        self.container.removeChild(badNodes[i]);
+                        cont.removeChild(badNodes[i]);
                     }
                 }
             }, 300);
 
             function onScroll(e) {
                 var scrollTop = e.target.scrollTop; // Triggers reflow
+                var topHeight = fullHeight - scrollTop - screenItemsLen * itemHeight;
+
+                cont.firstChild.style.minHeight = scrollTop + 'px';
+                cont.lastChild.style.minHeight = topHeight + 'px';
+
                 if (!lastRepaintY || Math.abs(scrollTop - lastRepaintY) > maxBuffer) {
-                    var first = parseInt(scrollTop / itemHeight) - screenItemsLen;
-                    self._renderChunk(self.container, first < 0 ? 0 : first);
+                    var first = parseInt(scrollTop / itemHeight);
+                    self._renderChunk(cont, first < 0 ? 0 : first);
                     lastRepaintY = scrollTop;
                 }
 
@@ -149,27 +169,14 @@ var VirtualList = function () {
                 e.preventDefault && e.preventDefault();
             }
 
-            this.container.addEventListener('scroll', onScroll);
+            //TODO: провесить ивенты для тачей, ресайза, сркола с помощью клавиатуры, возможно другие.
+            cont.addEventListener('scroll', onScroll);
         }
     }, {
         key: 'createRow',
         value: function createRow(i) {
-            var item = void 0;
-            if (this.generatorFn) item = this.generatorFn(i);else if (this.items) {
-                if (typeof this.items[i] === 'string') {
-                    var itemText = document.createTextNode(this.items[i]);
-                    item = document.createElement('div');
-                    item.style.height = this.itemHeight + 'px';
-                    item.appendChild(itemText);
-                } else {
-                    item = this.items[i];
-                }
-            }
-
-            item.classList.add('vrow');
-            item.style.position = 'absolute';
-            item.style.top = i * this.itemHeight + 'px';
-            return item;
+            return this.templateList.constructor(this.config.template, this.items[i], this.config.sortKey);
+            //TODO: добавить функцию генерации
         }
     }, {
         key: '_renderChunk',
@@ -177,76 +184,77 @@ var VirtualList = function () {
             var finalItem = from + this.cachedItemsLen;
             if (finalItem > this.totalRows) finalItem = this.totalRows;
 
-            // Append all the new rows in a document fragment that we will later append to
-            // the parent node
-            var fragment = document.createDocumentFragment();
-            for (var i = from; i < finalItem; i++) {
-                fragment.appendChild(this.createRow(i));
+            function htmlToElements(html) {
+                var template = document.createElement('template');
+                template.innerHTML = html;
+                return template.content;
             }
 
-            // Hide and mark obsolete nodes for deletion.
-            for (var j = 1, l = node.childNodes.length; j < l; j++) {
-                node.childNodes[j].style.display = 'none';
-                node.childNodes[j].setAttribute('data-rm', '1');
+            var htmlArr = [];
+            for (var i = from; i < finalItem; i++) {
+                htmlArr += this.createRow(i);
             }
-            node.appendChild(fragment);
+
+            var domInsert = htmlToElements(htmlArr);
+
+            //TODO: переписать это уёбищество с заменой дом дерева на удаление и добавление по кол-ву необходимых чанков
+            //TODO: #chank 1
+            for (var j = 1, l = node.childNodes.length; j < l - 1; j++) {
+                node.childNodes[j].style.display = 'none';
+                node.childNodes[j].setAttribute('data-rm', 'delete');
+            }
+
+            node.insertBefore(domInsert, node.lastChild);
         }
     }, {
         key: 'createContainer',
-        value: function createContainer(w, h) {
+        value: function createContainer(classListString) {
             var c = document.createElement('div');
+            c.classList.value = classListString;
             return c;
         }
     }, {
         key: 'createScroller',
-        value: function createScroller(h) {
+        value: function createScroller(height) {
             var scroller = document.createElement('div');
+            scroller.style.opacity = 0;
+            scroller.style.top = 0;
+            scroller.style.left = 0;
+            scroller.style.width = '100%';
+            scroller.style.minHeight = height + 'px';
             return scroller;
         }
     }, {
-        key: 'innerArrayInHTML',
-        value: function innerArrayInHTML(obj, data, templateList) {
-
-            //TODO: вынести логику сортировки
-            //TODO: переделать логику сортировку по ключу, вместо surname
-            //TODO: сделать заголовки списка в зависимости от regex,
-            //TODO: сделать возможность не обязательных заголовков в листе
-            //TODO:
+        key: 'sortedByKey',
+        value: function sortedByKey(data, key) {
 
             data.sort(function (a, b) {
-                console.log();
-                var surname = [a.name.split(' ')[1], b.name.split(' ')[1]];
-                if (surname[0] > surname[1]) {
+                if (a[key] > b[key]) {
                     return 1;
                 }
-                if (surname[0] < surname[1]) {
+                if (a[key] < b[key]) {
                     return -1;
                 }
                 // a должно быть равным b
                 return 0;
             });
 
-            var fs = data[0].name.split(" ")[1].charAt(0);
-            data.splice(0, 0, { name: fs });
+            var fs = data[0][key].charAt(0);
+            var sortObj = {};
+            sortObj[key] = fs;
+            data.splice(0, 0, sortObj);
 
             for (var i = 0; i < data.length; i++) {
-                if (i < data.length - 1 && fs != data[i + 1].name.split(" ")[1].charAt(0)) {
-                    fs = data[i + 1].name.split(" ")[1].charAt(0);
-                    data.splice(i, 0, { name: fs });
+                if (i < data.length - 1 && fs != data[i + 1][key].charAt(0)) {
+                    fs = data[i + 1][key].charAt(0);
+                    var _sortObj = {};
+                    _sortObj[key] = fs;
+                    data.splice(i, 0, _sortObj);
                     i++;
                 }
             }
 
-            for (var _i = 0; _i < document.querySelectorAll(obj.domElement).length; _i++) {
-                var el = document.querySelectorAll(obj.domElement)[_i];
-                el.innerHTML = templateList.constructor(obj.template, data);
-                this.VirtualListConfig({
-                    w: 300,
-                    h: 300,
-                    itemHeight: 31,
-                    totalRows: 10000
-                });
-            }
+            return data;
         }
     }]);
 
