@@ -16,8 +16,8 @@ virtual-scroll-list on ES6
 
 #How to use
 
-
-    var pvl = {
+    //Config example
+    var configVirtualList = {
         domElement: 'div#leftTopList',
         domContainer: {
             class: 'container-list list-group'
@@ -28,8 +28,7 @@ virtual-scroll-list on ES6
         template: 'list'
     };
 
-    //TODO: сделать конфиг для api, а по урлам получать информацию. Да бы не плодить статус и хидеры, они всё равно летают в промайзе.
-    //TODO: вынести в отдельный модуль api
+    //Get data from server if you need
     var dataRequest = {
         url: 'example/data-names.json',
         method: 'GET',
@@ -42,11 +41,14 @@ virtual-scroll-list on ES6
         ]
     };
 
+    //Create template exemplar
     var ls = new ListTemplate;
 
+
+    //Async request to server, on callback make virtual list with config
     new Api(dataRequest).then(
         function(res){
-            new VirtualList(pvl, JSON.parse(res.response), ls);
+            new VirtualList(configVirtualList, JSON.parse(res.response), ls);
         },
         function(err){
             console.log(err);
