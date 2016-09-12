@@ -249,7 +249,7 @@ var VirtualList = function () {
                     fs = data[i + 1][key].charAt(0);
                     var _sortObj = {};
                     _sortObj[key] = fs;
-                    data.splice(i, 0, _sortObj);
+                    data.splice(i + 1, 0, _sortObj);
                     i++;
                 }
             }
