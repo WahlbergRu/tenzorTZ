@@ -55,3 +55,6 @@ virtual-scroll-list on ES6
         }
     );
 
+#Example
+
+Example use bootstrap4, but you can use at will;
